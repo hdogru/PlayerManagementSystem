@@ -1,0 +1,6 @@
+@TeamBuilderWebAPI_HostAddress = http://localhost:5074
+
+GET {{TeamBuilderWebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
