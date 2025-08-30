@@ -1,0 +1,62 @@
+// === QA-Proof SheetJS Excel Download ===
+
+// Load SheetJS dynamically if not already loaded
+(function() {
+  if (typeof XLSX === "undefined") {
+    var script = document.createElement("script");
+    script.src = "https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js";
+    script.onload = function() {
+      console.log("✅ SheetJS loaded.");
+      downloadExcelQA();
+    };
+    document.head.appendChild(script);
+  } else {
+    console.log("⚡ SheetJS already loaded.");
+    downloadExcelQA();
+  }
+})();
+
+// Helper: convert binary string to ArrayBuffer
+function s2ab(s) {
+    const buf = new ArrayBuffer(s.length);
+    const view = new Uint8Array(buf);
+    for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+    return buf;
+}
+
+// Main download function
+function downloadExcelQA() {
+  // 1. Create workbook
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([
+    ["Name", "Age"],
+    ["Alice", 30],
+    ["Bob", 25]
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+  // 2. Generate binary string
+  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "binary" });
+
+  // 3. Convert to ArrayBuffer
+  const buf = s2ab(wbout);
+
+  // 4. Create Blob
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+  // 5. Trigger download
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "QA-Proof-Test.xlsx";
+  document.body.appendChild(a);
+  a.click();
+
+  // 6. Cleanup
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 0);
+
+  console.log("✅ QA-proof download triggered.");
+}
