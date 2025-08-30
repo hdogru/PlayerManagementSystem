@@ -1,0 +1,28 @@
+// === SheetJS QA vs Dev Checksum Test ===
+
+// 1. Build a simple workbook
+const wb = XLSX.utils.book_new();
+const ws = XLSX.utils.aoa_to_sheet([
+  ["Name", "Age"],
+  ["Alice", 30],
+  ["Bob", 25]
+]);
+XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+// 2. Generate ArrayBuffer
+const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+// 3. Log size
+console.log("✅ Workbook byte length:", wbout.byteLength);
+
+// 4. Compute a simple checksum
+let sum = 0;
+new Uint8Array(wbout).forEach(b => { sum = (sum + b) % 65536; });
+console.log("✅ Workbook checksum:", sum);
+
+// 5. Optional: Save to Blob and test download (should be same as before)
+const blob = new Blob([wbout], {
+  type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+});
+const url = URL.createObjectURL(blob);
+console.log("🔗 Blob URL:", url);
