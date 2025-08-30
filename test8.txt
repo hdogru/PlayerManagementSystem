@@ -1,0 +1,80 @@
+// === QA Binary Alteration Investigation Script ===
+
+// Load SheetJS dynamically if not already loaded
+(function() {
+  if (typeof XLSX === "undefined") {
+    var script = document.createElement("script");
+    script.src = "https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js";
+    script.onload = function() {
+      console.log("✅ SheetJS loaded.");
+      runInvestigation();
+    };
+    document.head.appendChild(script);
+  } else {
+    console.log("⚡ SheetJS already loaded.");
+    runInvestigation();
+  }
+})();
+
+// Helper: convert binary string to ArrayBuffer
+function s2ab(s) {
+  const buf = new ArrayBuffer(s.length);
+  const view = new Uint8Array(buf);
+  for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+  return buf;
+}
+
+// Helper: convert ArrayBuffer to hex string
+function abToHex(buffer, maxLength = 100) {
+  const u8 = new Uint8Array(buffer);
+  const len = Math.min(maxLength, u8.length);
+  let hex = "";
+  for (let i = 0; i < len; i++) {
+    hex += u8[i].toString(16).padStart(2, "0") + " ";
+  }
+  return hex.trim();
+}
+
+// Main investigation function
+function runInvestigation() {
+  // 1. Create a sample workbook
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([
+    ["Name", "Age"],
+    ["Alice", 30],
+    ["Bob", 25]
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+  // 2. Generate binary string
+  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "binary" });
+
+  // 3. Convert to ArrayBuffer
+  const buf = s2ab(wbout);
+  const u8 = new Uint8Array(buf);
+
+  // 4. Compute checksum
+  let sum = 0;
+  u8.forEach(b => { sum = (sum + b) % 65536; });
+
+  // 5. Log investigation data
+  console.log("✅ Workbook byte length:", buf.byteLength);
+  console.log("✅ Workbook checksum:", sum);
+  console.log("📌 First 100 bytes (hex):", abToHex(buf, 100));
+  console.log("📌 Last 100 bytes (hex):", abToHex(buf.slice(-100), 100));
+
+  // 6. Optional: trigger download for visual comparison
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `QA-Investigation-${sum}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 0);
+
+  console.log("🔗 Download triggered: QA-Investigation-" + sum + ".xlsx");
+}
