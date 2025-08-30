@@ -1,0 +1,57 @@
+// === SheetJS QA vs Dev Binary Debug Script ===
+
+// Load SheetJS dynamically if not already loaded
+(function() {
+  if (typeof XLSX === "undefined") {
+    var script = document.createElement("script");
+    script.src = "https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js";
+    script.onload = function() {
+      console.log("✅ SheetJS loaded.");
+      runTest();
+    };
+    document.head.appendChild(script);
+  } else {
+    console.log("⚡ SheetJS already loaded.");
+    runTest();
+  }
+})();
+
+// Main test function
+function runTest() {
+  // 1. Create a sample workbook
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([
+    ["Name", "Age"],
+    ["Alice", 30],
+    ["Bob", 25]
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+  // 2. Generate ArrayBuffer
+  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+  // 3. Compute checksum
+  let sum = 0;
+  const u8 = new Uint8Array(wbout);
+  u8.forEach(b => { sum = (sum + b) % 65536; });
+
+  // 4. Log details
+  console.log("✅ Workbook byte length:", wbout.byteLength);
+  console.log("✅ Workbook checksum:", sum);
+  console.log("📌 First 20 bytes:", u8.slice(0, 20));
+  console.log("📌 Last 20 bytes:", u8.slice(-20));
+
+  // 5. Optional: download with checksum in filename
+  const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `debug-checksum-${sum}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 0);
+}
