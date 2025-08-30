@@ -78,3 +78,6 @@ function runInvestigation() {
 
   console.log("🔗 Download triggered: QA-Investigation-" + sum + ".xlsx");
 }
+
+Format-Hex .\QA-Investigation.xlsx | Select-Object -First 100   # First 100 bytes
+Format-Hex .\QA-Investigation.xlsx | Select-Object -Last 100    # Last 100 bytes
