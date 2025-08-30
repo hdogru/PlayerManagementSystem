@@ -1,0 +1,76 @@
+// === SheetJS Excel Download Test ===
+// Paste this into DevTools Console or save as a .js file and inject manually.
+
+// Load SheetJS dynamically if not already loaded
+(function() {
+  if (typeof XLSX === "undefined") {
+    var script = document.createElement("script");
+    script.src = "https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js";
+    script.onload = function() {
+      console.log("✅ SheetJS loaded. Use downloadExcel() or downloadExcelDirect().");
+      createTestButtons();
+    };
+    document.head.appendChild(script);
+  } else {
+    console.log("⚡ SheetJS already loaded. Use downloadExcel() or downloadExcelDirect().");
+    createTestButtons();
+  }
+})();
+
+// Blob method (manual)
+function downloadExcel() {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([
+    ["Name", "Age"],
+    ["Alice", 30],
+    ["Bob", 25]
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([wbout], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "blob-test.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 0);
+}
+
+// writeFile method (built-in)
+function downloadExcelDirect() {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([
+    ["Name", "Age"],
+    ["Alice", 30],
+    ["Bob", 25]
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+  XLSX.writeFile(wb, "writefile-test.xlsx");
+}
+
+// Helper to inject test buttons
+function createTestButtons() {
+  const div = document.createElement("div");
+  div.style.position = "fixed";
+  div.style.top = "10px";
+  div.style.right = "10px";
+  div.style.zIndex = 9999;
+  div.style.background = "white";
+  div.style.border = "1px solid #ccc";
+  div.style.padding = "10px";
+  div.style.boxShadow = "0px 2px 6px rgba(0,0,0,0.2)";
+  div.innerHTML = `
+    <button onclick="downloadExcel()">Blob Method</button>
+    <button onclick="downloadExcelDirect()">writeFile Method</button>
+  `;
+  document.body.appendChild(div);
+}
