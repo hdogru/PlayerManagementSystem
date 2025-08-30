@@ -1,0 +1,11 @@
+const wb = XLSX.utils.book_new();
+const ws = XLSX.utils.aoa_to_sheet([["Name","Age"],["Alice",30]]);
+XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+console.log("ArrayBuffer length:", wbout.byteLength);
+
+// Compute a checksum
+let sum = 0;
+new Uint8Array(wbout).forEach(b => sum = (sum + b) % 65536);
+console.log("Checksum:", sum);
